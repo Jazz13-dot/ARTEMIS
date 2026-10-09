@@ -103,6 +103,19 @@ python classify_webcam.py
 
 ---
 
+## 📊 Dashboard
+
+A web dashboard combines the camera, YOLOv8 and the Arduino sensors (MPU6050, ultrasonic, IR, buzzer) and shows live status with the reason for every alarm, telemetry charts, defect locations, maintenance priority and an event log.
+
+```bash
+python dashboard/app.py --simulate            # demo without hardware
+python dashboard/app.py --port COM3 --camera 0
+```
+
+Open http://localhost:5000. Details: [dashboard/README.md](dashboard/README.md). Arduino firmware: `firmware/artemis_nano/artemis_nano.ino`.
+
+---
+
 ## 🎯 Detection Classes
 
 The current model classifies railway tracks into the following categories:
@@ -166,11 +179,11 @@ The upcoming versions of ARTEMIS aim to include:
 - ✅ Real-time webcam inference
 - ✅ Railway defect classification
 - ✅ Live confidence display
+- ✅ Web dashboard with sensor fusion and event logging
 
 ### Planned
 - 🚧 Object detection
 - 🚧 Edge deployment
-- 🚧 Dashboard integration
 - 🚧 GPS mapping
 - 🚧 Automated reporting
 

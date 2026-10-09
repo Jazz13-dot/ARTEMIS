@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARTEMIS Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 3v18M18 3v18M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </span>
+    <div>
+      <h1>A.R.T.E.M.I.S <span class="sub">: AI RAILWAY TRACKING</span></h1>
+      <p class="route"><span id="route">—</span> · <span id="mode-badge" class="badge">—</span></p>
+    </div>
+  </div>
+  <ul class="health" aria-label="System health">
+    <li id="h-arduino"><i></i>Arduino: <b>—</b></li>
+    <li id="h-camera"><i></i>Camera: <b>—</b></li>
+    <li id="h-model"><i></i>AI model: <b>—</b></li>
+    <li class="plain">FPS <b id="h-fps">—</b></li>
+    <li class="plain"><b id="clock">—</b></li>
+  </ul>
+  <div class="actions">
+    <button id="settings-btn" class="ghost" aria-label="Detection settings" title="Detection settings">
+      <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button id="theme-btn" class="ghost" aria-label="Toggle theme" title="Toggle light / dark">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="model-warning" class="notice" hidden></div>
+
+<main>
+  <!-- ============ LIVE ============ -->
+  <section class="grid live">
+    <div class="card video-card">
+      <div class="video-wrap">
+        <img id="video" src="/video_feed" alt="Live track camera">
+        <div class="video-empty" id="video-empty" hidden>No camera signal</div>
+        <div class="hud-tl"><span class="dot rec"></span>LIVE · <span id="chainage-hud">—</span></div>
+        <div class="hud-br" id="hud-detect">
+          <span class="hud-k">YOLOv8</span>
+          <span class="hud-label" id="hud-label">—</span>
+          <span class="hud-conf"><span id="hud-conf">—</span> · <span id="hud-ms">—</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card status-card" id="status-card" data-status="SAFE">
+      <div class="status-head">
+        <span class="status-icon" id="status-icon" aria-hidden="true"></span>
+        <div>
+          <div class="k">Track status</div>
+          <div class="status-word" id="status-word">—</div>
+        </div>
+        <div class="buzzer" id="buzzer" title="Arduino buzzer">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path id="buzzer-waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          <span id="buzzer-text">Buzzer</span>
+        </div>
+      </div>
+
+      <div class="detection">
+        <div class="k">Detection</div>
+        <div class="headline" id="headline">—</div>
+        <ul class="reasons" id="reasons"></ul>
+      </div>
+
+      <dl class="readout">
+        <dt>Distance</dt><dd><span id="r-dist">—</span></dd>
+        <dt>ACC (g)</dt><dd id="r-acc">—</dd>
+        <dt>GYRO (°/s)</dt><dd id="r-gyro">—</dd>
+        <dt>Vibration</dt><dd><span id="r-vib">—</span></dd>
+        <dt>IR sensor</dt><dd id="r-ir">—</dd>
+        <dt>Chainage</dt><dd id="r-chain">—</dd>
+      </dl>
+
+      <div class="status-actions">
+        <button id="mute-btn" class="secondary">Mute buzzer</button>
+        <button id="ack-all-btn" class="primary">Acknowledge alarms <span class="pill" id="unack-count">0</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TELEMETRY ============ -->
+  <section>
+    <div class="section-head">
+      <h2>Live telemetry <span class="muted">last 2 minutes</span></h2>
+    </div>
+    <div class="grid three">
+      <figure class="card chart-card">
+        <figcaption><b>Vibration index</b> <span class="muted">g, σ of |acc| over 0.5 s</span></figcaption>
+        <div class="chart" id="chart-vib"></div>
+      </figure>
+      <figure class="card chart-card">
+        <figcaption><b>Ultrasonic distance</b> <span class="muted">cm</span></figcaption>
+        <div class="chart" id="chart-dist"></div>
+      </figure>
+      <figure class="card chart-card">
+        <figcaption><b>Acceleration</b> <span class="muted">g, MPU6050</span></figcaption>
+        <div class="legend" id="legend-acc"></div>
+        <div class="chart" id="chart-acc"></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY FILTER ============ -->
+  <section>
+    <div class="section-head sticky-filters">
+      <h2>Inspection history</h2>
+      <div class="filters" role="group" aria-label="Time range">
+        <button data-range="15m">15 min</button>
+        <button data-range="1h" class="on">1 hour</button>
+        <button data-range="24h">24 hours</button>
+        <button data-range="all">All</button>
+      </div>
+    </div>
+
+    <div class="grid kpis" id="kpis">
+      <div class="card kpi"><div class="k">Alarms</div><div class="v" id="k-total">—</div></div>
+      <div class="card kpi"><div class="k">Danger</div><div class="v" id="k-danger">—</div></div>
+      <div class="card kpi"><div class="k">Unacknowledged</div><div class="v" id="k-unack">—</div></div>
+      <div class="card kpi"><div class="k">Most frequent</div><div class="v small" id="k-top">—</div></div>
+      <div class="card kpi"><div class="k">Segments needing attention</div><div class="v" id="k-segs">—</div></div>
+    </div>
+
+    <div class="card map-card">
+      <div class="map-head">
+        <div><b>Defect locations</b> <span class="muted">along <span id="map-route">route</span> · chainage estimated from speed until GPS is fitted</span></div>
+        <div class="legend" id="legend-map"></div>
+      </div>
+      <div id="track-map" class="track-map"></div>
+    </div>
+
+    <div class="grid two">
+      <figure class="card chart-card">
+        <figcaption><b>Alarms over time</b> <span class="muted">by reason</span></figcaption>
+        <div class="legend" id="legend-trend"></div>
+        <div class="chart tall" id="chart-trend"></div>
+      </figure>
+      <div class="card">
+        <div class="card-title"><b>Maintenance priority</b> <span class="muted">per <span id="seg-size">200</span> m segment</span></div>
+        <div class="table-scroll">
+        <table class="table" id="segments">
+          <thead><tr><th>Priority</th><th>Segment (km)</th><th>Alarms</th><th>Reasons</th><th>Last seen</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+        <p class="empty" id="segments-empty" hidden>No alarms in this period — track is clear.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title log-head">
+        <b>Event log</b>
+        <div class="log-filters">
+          <select id="f-severity" aria-label="Severity">
+            <option value="">All severities</option>
+            <option value="DANGER">Danger</option>
+            <option value="WARNING">Warning</option>
+          </select>
+          <select id="f-code" aria-label="Reason">
+            <option value="">All reasons</option>
+            <option value="crack">Crack</option>
+            <option value="vibration">Higher vibration</option>
+            <option value="vegetation">Vegetation</option>
+            <option value="obstacle">Obstacle</option>
+            <option value="ir">IR sensor</option>
+          </select>
+          <a class="button secondary" id="csv-link" href="/api/events.csv?range=1h" download>Export CSV</a>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="table" id="events">
+          <thead><tr><th>Time</th><th>Severity</th><th>Reason</th><th>Chainage</th><th>AI</th><th>Vibration</th><th>Distance</th><th>Snapshot</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="empty" id="events-empty" hidden>No events recorded for this filter.</p>
+    </div>
+  </section>
+</main>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+<dialog id="snapshot-dialog">
+  <form method="dialog"><button class="ghost close" aria-label="Close">✕</button></form>
+  <img id="snapshot-img" alt="Event snapshot">
+  <p id="snapshot-caption"></p>
+</dialog>
+
+<dialog id="settings-dialog">
+  <form id="settings-form" method="dialog">
+    <h3>Detection settings</h3>
+    <p class="muted">Applied live by the fusion logic on the PC; the Arduino follows the resulting status.</p>
+    <label>AI confidence threshold <input type="number" name="confidence" step="0.05" min="0" max="1"></label>
+    <label>Vibration warning (g) <input type="number" name="vibration_warn" step="0.01" min="0"></label>
+    <label>Vibration danger (g) <input type="number" name="vibration_danger" step="0.01" min="0"></label>
+    <label>Obstacle distance (cm) <input type="number" name="obstacle_cm" step="5" min="0"></label>
+    <label>Repeat-alarm cooldown (s) <input type="number" name="event_cooldown_s" step="1" min="0"></label>
+    <label class="check"><input type="checkbox" name="buzzer_enabled"> Buzzer enabled</label>
+    <div class="dialog-actions">
+      <button value="cancel" class="secondary">Cancel</button>
+      <button value="save" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/charts.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
